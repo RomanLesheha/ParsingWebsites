@@ -19,19 +19,54 @@ using System.Security.Cryptography;
 class Program
 {
 
-    public class Teacher
-    {
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string Position { get; set; }
-        public string Email { get; set; }
-        public string ProfileUrl { get; set; }
-        public string ImageUrl { get; set; }
 
-        public string FacultyName { get; set; }
-    }
+public class Teacher
+{
+    public string Id { get; set; }
+    public string Email { get; set; }
+    public string Name { get; set; }
+    public string Position { get; set; }
+    public string Faculty { get; set; }
+    public string ImageURL { get; set; }
+    public string OriginalPageURL { get; set; }
+    public string ScientificInterests { get; set; }
+    public List<List<Mark>> MarksArrays { get; set; }
+    public List<Comment> ArrayOfComments { get; set; }
+    public List<Discipline> ArrayOfDiscipline { get; set; }
+}
 
-    public class FacultyLink
+public class Mark
+{
+    public string MarkType { get; set; }
+    public string AddresseeID { get; set; }
+    public int MarkValue { get; set; }
+    public string DataOfPublishing { get; set; }
+    public string PublisherID { get; set; }
+}
+
+public class Comment
+{
+    public string AddresseeID { get; set; }
+    public string DataOfPublishing { get; set; }
+    public string PublisherID { get; set; }
+    public string TextOfComment { get; set; }
+    public bool IsAnonymous { get; set; }
+    public bool IsPositive { get; set; } = true;
+}
+
+public class Discipline
+{
+    public string Id { get; set; }
+    public string NameOfDiscipline { get; set; }
+    public string DisciplinePageURL { get; set; }
+    public string DescriptionOfDiscipline { get; set; }
+    public string[] ArrayOfTeacher { get; set; }
+    public List<List<Mark>> MarksArrays { get; set; }
+    public List<Comment> ArrayOfComments { get; set; }
+}
+
+
+public class FacultyLink
     {
         public string FacultyName { get; set; }
         public string Url { get; set; }
@@ -78,7 +113,7 @@ class Program
         stopwatch.Start();
 
 
-        //var teachers = await ParsingTeachersAsync(LNUTeachers);
+        var teachers = await ParsingTeachersAsync(LNUTeachers);
 
         //foreach (var teacher in teachers)
         //{
@@ -94,8 +129,8 @@ class Program
         {
             var config = new FireSharp.Config.FirebaseConfig
             {
-                AuthSecret = "JC1SCjtvWfIYoVTngFRsQJ7C3PNqwPEgAAwE65yP",
-                BasePath = "https://test-d2c50-default-rtdb.firebaseio.com/"
+                AuthSecret = "fH1NntjCAbadkxnxDb6QmmXzlkVjX4WgSCzhG5KE",
+                BasePath = "https://uniproject-b9c81-default-rtdb.europe-west1.firebasedatabase.app/"
             };
 
             using (var client = new FireSharp.FirebaseClient(config))
@@ -140,8 +175,8 @@ class Program
         {
             var config = new FireSharp.Config.FirebaseConfig
             {
-                AuthSecret = "JC1SCjtvWfIYoVTngFRsQJ7C3PNqwPEgAAwE65yP",
-                BasePath = "https://test-d2c50-default-rtdb.firebaseio.com/"
+                AuthSecret = "fH1NntjCAbadkxnxDb6QmmXzlkVjX4WgSCzhG5KE",
+                BasePath = "https://uniproject-b9c81-default-rtdb.europe-west1.firebasedatabase.app/"
             };
 
             using (var client = new FireSharp.FirebaseClient(config))
@@ -155,7 +190,7 @@ class Program
                     }
                     else
                     {
-                        var setResponse = await client.SetAsync($"teachers/{teacher.FacultyName}/{teacher.Id}", teacher); // Змінено шлях зберігання
+                        var setResponse = await client.SetAsync($"LNU/teachers/{teacher.Faculty}/{teacher.Id}", teacher); // Змінено шлях зберігання
                         if (setResponse.StatusCode == System.Net.HttpStatusCode.OK)
                         {
                             Console.WriteLine($"Teacher {teacher.Name} uploaded successfully");
@@ -224,7 +259,6 @@ class Program
 
                             var imageUrlNode = profileDoc.DocumentNode.SelectSingleNode("//span[@class='photo']");
                             var styleAttribute = imageUrlNode?.Attributes["style"]?.Value?.Trim();
-
                             string imageUrl = null;
                             if (!string.IsNullOrEmpty(styleAttribute))
                             {
@@ -236,15 +270,77 @@ class Program
                                 }
                             }
 
+                            var interestsSection = profileDoc.DocumentNode.SelectSingleNode("//section[h2='Наукові інтереси']");
+
+                            var interests = interestsSection?.InnerText.Trim() ?? ""; 
+                            
+       
+                            var disciplinesSection = profileDoc.DocumentNode.SelectSingleNode("//section[h2='Навчальні дисципліни']");
+
+                            List<Discipline> disciplineList = new List<Discipline>();
+                            if (disciplinesSection != null)
+                            {
+                                var disciplineNodes = disciplinesSection.SelectNodes(".//ul/li/a");
+                                if (disciplineNodes != null)
+                                {
+                                    foreach (var d in disciplineNodes)
+                                    {
+                                        var disiplineObject = new Discipline();
+                                        disiplineObject.NameOfDiscipline = d.InnerText.Trim();
+                                        disiplineObject.DisciplinePageURL = d.Attributes["href"].Value;
+                                        disciplineList.Add(disiplineObject);
+                                    }
+                                }
+                            }
+
                             var teacher = new Teacher
                             {
                                 Id = GetHash(name),
                                 Name = name,
                                 Position = position,
                                 Email = email,
-                                ProfileUrl = profileUrl,
-                                ImageUrl = imageUrl,
-                                FacultyName = facultyName // Додамо назву факультету
+                                OriginalPageURL = profileUrl,
+                                ImageURL = imageUrl,
+                                Faculty = facultyName,
+                                ScientificInterests = interests,
+                                ArrayOfDiscipline = disciplineList,
+                                MarksArrays = new List<List<Mark>>
+                                {
+                                    new List<Mark>
+                                    {
+                                        new Mark
+                                        {
+                                            MarkType = "Об'єктивність оцінювання",
+                                            AddresseeID = "",
+                                            MarkValue = 0,
+                                            DataOfPublishing = "",
+                                            PublisherID = ""
+                                        }
+                                    },
+                                    new List<Mark>
+                                    {
+                                        new Mark
+                                        {
+                                            MarkType = "Методичне забезпечення",
+                                            AddresseeID = "",
+                                            MarkValue = 0,
+                                            DataOfPublishing = "",
+                                            PublisherID = ""
+                                        }
+                                    },
+                                    new List<Mark>
+                                    {
+                                        new Mark
+                                        {
+                                            MarkType = "Якість викладання",
+                                            AddresseeID = "",
+                                            MarkValue = 0,
+                                            DataOfPublishing = "",
+                                            PublisherID = ""
+                                        }
+                                    }
+                                },
+                                ArrayOfComments = new List<Comment>(),
                             };
 
                             teachers.Add(teacher);
