@@ -78,7 +78,7 @@ class Program
         stopwatch.Start();
 
 
-        var teachers = await ParsingTeachersAsync(LNUTeachers);
+        //var teachers = await ParsingTeachersAsync(LNUTeachers);
 
         //foreach (var teacher in teachers)
         //{
@@ -105,8 +105,13 @@ class Program
                     var response = await client.GetAsync("teachers");
                     if (response.Body != "null") // якщо не null, то вузол існує
                     {
-                        var data = response.ResultAs<Dictionary<string, Teacher>>();
-                        return data.Count;
+                        var data = response.ResultAs<Dictionary<string, Dictionary<string, Teacher>>>();
+                        int totalCount = 0;
+                        foreach (var faculty in data)
+                        {
+                            totalCount += faculty.Value.Count;
+                        }
+                        return totalCount;
                     }
                     else
                     {
@@ -127,6 +132,7 @@ class Program
             return -1; // якщо сталася помилка
         }
     }
+
 
     public static async Task UploadTeacherToFirebase(Teacher teacher)
     {
@@ -226,7 +232,7 @@ class Program
                                 int endIndex = styleAttribute.LastIndexOf(")");
                                 if (startIndex != -1 && endIndex != -1)
                                 {
-                                    imageUrl = styleAttribute.Substring(startIndex + 4, endIndex - startIndex - 5);
+                                    imageUrl = styleAttribute.Substring(startIndex + 4, endIndex - startIndex - 4);
                                 }
                             }
 
