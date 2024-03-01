@@ -113,7 +113,7 @@ public class FacultyLink
         stopwatch.Start();
 
 
-        var teachers = await ParsingTeachersAsync(LNUTeachers);
+        // var teachers = await ParsingTeachersAsync(LNUTeachers);
 
         //foreach (var teacher in teachers)
         //{
@@ -137,7 +137,7 @@ public class FacultyLink
             {
                 if (client != null)
                 {
-                    var response = await client.GetAsync("teachers");
+                    var response = await client.GetAsync("LNU/teachers");
                     if (response.Body != "null") // якщо не null, то вузол існує
                     {
                         var data = response.ResultAs<Dictionary<string, Dictionary<string, Teacher>>>();
